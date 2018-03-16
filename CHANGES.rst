@@ -28,6 +28,11 @@
     ``haskell-stack-ghc`` checker. [GH-1316]
   - Add ``flycheck-perl-module-list`` to use specified modules when
     syntax checking code with the ``perl`` checker.
+  - Add ``idle-buffer-switch`` option for use in
+    ``flycheck-check-syntax-automatically``.  Variables
+    ``flycheck-idle-buffer-switch-delay`` and
+    ``flycheck-buffer-switch-check-intermediate-buffers`` control the
+    functionality. [GH-1297]
 
 - Improvements
 

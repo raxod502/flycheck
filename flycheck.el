@@ -538,6 +538,10 @@ The following events are known:
      Check syntax a short time (see `flycheck-idle-change-delay')
      after the last change to the buffer.
 
+`idle-buffer-switch'
+     Check syntax a short time (see `flycheck-idle-buffer-switch-delay')
+     after the user switches to a buffer.
+
 `new-line'
      Check syntax immediately after a new line was inserted into
      the buffer.
@@ -557,13 +561,14 @@ If nil, never check syntax automatically.  In this case, use
   :group 'flycheck
   :type '(set (const :tag "After the buffer was saved" save)
               (const :tag "After the buffer was changed and idle" idle-change)
+              (const :tag "After switching to a new buffer and idle" idle-buffer-switch)
               (const :tag "After a new line was inserted" new-line)
               (const :tag "After `flycheck-mode' was enabled" mode-enabled))
   :package-version '(flycheck . "0.12")
   :safe #'flycheck-symbol-list-p)
 
 (defcustom flycheck-idle-change-delay 0.5
-  "How many seconds to wait before checking syntax automatically.
+  "How long to wait after a change before checking syntax automatically.
 
 After the buffer was changed, Flycheck will wait as many seconds
 as the value of this variable before starting a syntax check.  If
@@ -576,6 +581,39 @@ This variable has no effect, if `idle-change' is not contained in
   :type 'number
   :package-version '(flycheck . "0.13")
   :safe #'numberp)
+
+(defcustom flycheck-idle-buffer-switch-delay 0.5
+  "How long to wait after switching buffers before checking syntax.
+
+After the user switches to a new buffer, Flycheck will wait as
+many seconds as the value of this variable before starting a
+syntax check.  If the user switches to another buffer during this
+time, whether a syntax check is still performed depends on the
+value of `flycheck-buffer-switch-check-intermediate-buffers'.
+
+This variable has no effect if `idle-buffer-switch' is not
+contained in `flycheck-check-syntax-automatically'."
+  :group 'flycheck
+  :type 'number
+  :package-version '(flycheck . "32")
+  :safe #'numberp)
+
+(defcustom flycheck-buffer-switch-check-intermediate-buffers nil
+  "Whether to check syntax in a buffer you only visit briefly.
+
+If nil, then when you switch to a buffer but switch to another
+buffer before the syntax check is performed, then the check is
+canceled.  If non-nil, then syntax checks due to switching
+buffers are always performed.  This only affects buffer switches
+that happen less than `flycheck-idle-buffer-switch-delay' seconds
+apart.
+
+This variable has no effect if `idle-buffer-switch' is not
+contained in `flycheck-check-syntax-automatically'."
+  :group 'flycheck
+  :type 'boolean
+  :package-version '(flycheck . "32")
+  :safe #'booleanp)
 
 (defcustom flycheck-standard-error-navigation t
   "Whether to support error navigation with `next-error'.
@@ -2400,7 +2438,9 @@ buffer manually.
                                                next-error-function
                                              :unset))
     (when flycheck-standard-error-navigation
-      (setq next-error-function #'flycheck-next-error-function)))
+      (setq next-error-function #'flycheck-next-error-function))
+
+    (add-hook 'post-command-hook #'flycheck-handle-buffer-switch))
    (t
     (unless (eq flycheck-old-next-error-function :unset)
       (setq next-error-function flycheck-old-next-error-function))
@@ -2771,6 +2811,11 @@ buffer."
     (when flycheck-mode
       ;; The buffer was changed, thus clear the idle timer
       (flycheck-clear-idle-change-timer)
+      ;; If we can guarantee that this timer is actually going to
+      ;; result in a syntax check, we can cancel any other
+      ;; pre-existing timers that would cause syntax checks.
+      (when (memq 'idle-change flycheck-check-syntax-automatically)
+        (flycheck-clear-idle-buffer-switch-timer))
       (if (string-match-p (rx "\n") (buffer-substring beg end))
           (flycheck-buffer-automatically 'new-line 'force-deferred)
         (setq flycheck-idle-change-timer
@@ -2791,6 +2836,62 @@ because some users override that function, as described in URL
   "Handle an expired idle timer since the last change."
   (flycheck-clear-idle-change-timer)
   (flycheck-buffer-automatically 'idle-change))
+
+(defvar-local flycheck-idle-buffer-switch-timer nil
+  "Timer to mark the idle time since switching to a new buffer.")
+
+(defvar-local flycheck--force-checking-intermediate-buffers nil
+  "If non-nil, don't cancel syntax checks for intermediate buffers.
+Ignore `flycheck-buffer-switch-check-intermediate-buffers' in
+that case.")
+
+(defun flycheck-clear-idle-buffer-switch-timer ()
+  "Clear the idle buffer switch timer."
+  (when flycheck-idle-buffer-switch-timer
+    (cancel-timer flycheck-idle-buffer-switch-timer)
+    (setq flycheck-idle-buffer-switch-timer nil)))
+
+(defvar flycheck--last-buffer (current-buffer)
+  "The current buffer or the buffer that was previously current.
+This is usually equal to the current buffer, unless the user just
+switched buffers.  After a buffer switch, it is the previous
+buffer.")
+
+(defun flycheck-handle-buffer-switch ()
+  "Handle a possible switch to another buffer.
+
+If a buffer switch actually happened, schedule a syntax check."
+  (unless (equal flycheck--last-buffer (current-buffer))
+    (setq flycheck--last-buffer (current-buffer))
+    (when flycheck-mode
+      ;; Reschedule any check that was going to be run in the current
+      ;; buffer due to a buffer switch.
+      (flycheck-clear-idle-buffer-switch-timer)
+      ;; If we can guarantee that this timer is actually going to
+      ;; result in a syntax check, we can cancel any other
+      ;; pre-existing timers that would cause syntax checks.
+      (when (memq 'idle-buffer-switch flycheck-check-syntax-automatically)
+        ;; Make sure that this timer can't get canceled by the user
+        ;; switching to another buffer.
+        (setq flycheck--force-checking-intermediate-buffers t)
+        (flycheck-clear-idle-change-timer))
+      (setq flycheck-idle-buffer-switch-timer
+            (run-at-time flycheck-idle-buffer-switch-delay nil
+                         #'flycheck-handle-idle-buffer-switch
+                         (current-buffer))))))
+
+(defun flycheck-handle-idle-buffer-switch (buffer)
+  "Handle an expired idle timer in BUFFER since the last buffer switch."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (flycheck-clear-idle-buffer-switch-timer)
+      (when (or flycheck-buffer-switch-check-intermediate-buffers
+                flycheck--force-checking-intermediate-buffers
+                (equal buffer (current-buffer)))
+        ;; Setting this variable to non-nil guarantees exactly one
+        ;; syntax check.  After that, we can remove the effects.
+        (setq flycheck--force-checking-intermediate-buffers nil)
+        (flycheck-buffer-automatically 'idle-buffer-switch)))))
 
 (defun flycheck-handle-save ()
   "Handle a save of the buffer."
