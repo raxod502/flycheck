@@ -34,6 +34,11 @@
   - Add ``flycheck-sh-bash-args`` to pass arguments to ``sh-bash`` [GH-1439].
   - Add ``flychjeck-eslint-args`` to pass arguments to ``javascript-eslint``
     [GH-1360]
+  - Add ``idle-buffer-switch`` option for use in
+    ``flycheck-check-syntax-automatically``.  Variables
+    ``flycheck-idle-buffer-switch-delay`` and
+    ``flycheck-buffer-switch-check-intermediate-buffers`` control the
+    functionality [GH-1297]
 
 - Improvements
 
