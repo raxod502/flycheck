@@ -2439,7 +2439,12 @@ buffer manually.
     (when flycheck-standard-error-navigation
       (setq next-error-function #'flycheck-next-error-function))
 
-    (add-hook 'post-command-hook #'flycheck-handle-buffer-switch))
+    ;; This hook must be added globally since otherwise we cannot
+    ;; detect a change from a buffer where Flycheck is enabled to a
+    ;; buffer where Flycheck is not enabled, and therefore cannot
+    ;; notice that there has been any change when the user switches
+    ;; back to the buffer where Flycheck is enabled.
+    (add-hook 'buffer-list-update-hook #'flycheck-handle-buffer-switch))
    (t
     (unless (eq flycheck-old-next-error-function :unset)
       (setq next-error-function flycheck-old-next-error-function))
