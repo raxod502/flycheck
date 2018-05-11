@@ -2754,7 +2754,7 @@ current syntax check."
   (flycheck-hide-error-buffer))
 
 (defun flycheck-teardown ()
-  "Teardown Flycheck in the current buffer..
+  "Teardown Flycheck in the current buffer.
 
 Completely clear the whole Flycheck state.  Remove overlays, kill
 running checks, and empty all variables used by Flycheck."
@@ -8748,7 +8748,7 @@ See URL `https://pugjs.org/'."
           (one-or-more
            (zero-or-more not-newline) "|"
            (zero-or-more not-newline) "\n") (zero-or-more not-newline) "\n"
-           (message) line-end))
+          (message) line-end))
   :modes pug-mode)
 
 (flycheck-define-checker puppet-parser
