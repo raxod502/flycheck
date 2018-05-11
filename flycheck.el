@@ -2770,6 +2770,13 @@ current syntax check."
   (flycheck-error-list-refresh)
   (flycheck-hide-error-buffer))
 
+(defun flycheck-empty-variables ()
+  "Empty variables used by Flycheck."
+  (dolist (var '(flycheck--force-checking-intermediate-buffers
+                 flycheck-idle-change-timer
+                 flycheck-idle-buffer-switch-timer))
+    (kill-local-variable var)))
+
 (defun flycheck-teardown ()
   "Teardown Flycheck in the current buffer.
 
@@ -2779,7 +2786,10 @@ running checks, and empty all variables used by Flycheck."
   (flycheck-stop)
   (flycheck-clean-deferred-check)
   (flycheck-clear)
-  (flycheck-cancel-error-display-error-at-point-timer))
+  (flycheck-cancel-error-display-error-at-point-timer)
+  (flycheck-clear-idle-change-timer)
+  (flycheck-clear-idle-buffer-switch-timer)
+  (flycheck-empty-variables))
 
 
 ;;; Automatic syntax checking in a buffer
@@ -3019,7 +3029,8 @@ variables of Flycheck."
   (dolist (buffer (buffer-list))
     (with-current-buffer buffer
       (when flycheck-mode
-        (flycheck-teardown)))))
+        (flycheck-teardown))))
+  (remove-hook 'buffer-list-update-hook #'flycheck-handle-buffer-switch))
 
 ;; Clean up the entire state of Flycheck when Emacs is killed, to get rid of any
 ;; pending temporary files.
