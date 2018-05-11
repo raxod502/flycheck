@@ -2913,16 +2913,17 @@ If a buffer switch actually happened, schedule a syntax check."
 
 (defun flycheck-handle-idle-buffer-switch (buffer)
   "Handle an expired idle timer in BUFFER since the last buffer switch."
-  (when (buffer-live-p buffer)
-    (with-current-buffer buffer
-      (flycheck-clear-idle-buffer-switch-timer)
-      (when (or flycheck-buffer-switch-check-intermediate-buffers
-                flycheck--force-checking-intermediate-buffers
-                (equal buffer (current-buffer)))
-        ;; Setting this variable to non-nil guarantees exactly one
-        ;; syntax check.  After that, we can remove the effects.
-        (setq flycheck--force-checking-intermediate-buffers nil)
-        (flycheck-buffer-automatically 'idle-buffer-switch)))))
+  (let ((new-buffer (current-buffer)))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (flycheck-clear-idle-buffer-switch-timer)
+        (when (or flycheck-buffer-switch-check-intermediate-buffers
+                  flycheck--force-checking-intermediate-buffers
+                  (equal buffer new-buffer))
+          ;; Setting this variable to non-nil guarantees exactly one
+          ;; syntax check.  After that, we can remove the effects.
+          (setq flycheck--force-checking-intermediate-buffers nil)
+          (flycheck-buffer-automatically 'idle-buffer-switch))))))
 
 (defun flycheck-handle-save ()
   "Handle a save of the buffer."
