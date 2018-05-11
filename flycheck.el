@@ -2771,7 +2771,7 @@ current syntax check."
   (flycheck-hide-error-buffer))
 
 (defun flycheck-teardown ()
-  "Teardown Flycheck in the current buffer..
+  "Teardown Flycheck in the current buffer.
 
 Completely clear the whole Flycheck state.  Remove overlays, kill
 running checks, and empty all variables used by Flycheck."
