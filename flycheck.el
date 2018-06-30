@@ -6315,7 +6315,7 @@ more information about GNAT warnings."
   "An Ada syntax checker using GNAT.
 
 Uses the GNAT compiler from GCC.  See URL
-`http://libre.adacore.com/tools/gnat-gpl-edition/'."
+`https://www.adacore.com/community/'."
   :command ("gnatmake"
             "-c"                        ; Just compile, don't bind
             "-f"                        ; Force re-compilation
@@ -6885,7 +6885,7 @@ See URL `http://www.foodcritic.io'."
 (flycheck-define-checker coffee
   "A CoffeeScript syntax checker using coffee.
 
-See URL `http://coffeescript.org/'."
+See URL `https://coffeescript.org/'."
   ;; --print suppresses generation of compiled .js files
   :command ("coffee" "--compile" "--print" "--stdio")
   :standard-input t
@@ -7079,7 +7079,7 @@ the schema file of Common Workflow Language."
   "A CWL syntax checker using Schema Salad validator.
 
 Requires Schema Salad 2.6.20171101113912 or newer.
-See URL `http://www.commonwl.org/v1.0/SchemaSalad.html'."
+See URL `https://www.commonwl.org/v1.0/SchemaSalad.html'."
   :command ("schema-salad-tool"
             "--quiet"
             "--print-oneline"
@@ -7126,7 +7126,7 @@ Relative paths are relative to the file being checked."
 (flycheck-define-checker d-dmd
   "A D syntax checker using the DMD compiler.
 
-Requires DMD 2.066 or newer.  See URL `http://dlang.org/'."
+Requires DMD 2.066 or newer.  See URL `https://dlang.org/'."
   :command ("dmd"
             "-debug"                    ; Compile in debug mode
             "-o-"                       ; Don't generate an object file
@@ -8375,7 +8375,7 @@ hierarchy, it looks first for `.eslintignore' and then for
 (flycheck-define-checker javascript-eslint
   "A Javascript syntax and style checker using eslint.
 
-See URL `http://eslint.org/'."
+See URL `https://eslint.org/'."
   :command ("eslint" "--format=json"
             (option-list "--rulesdir" flycheck-eslint-rules-directories)
             (eval flycheck-eslint-args)
@@ -8403,7 +8403,7 @@ This checker works with `standard' and `semistandard', defaulting
 to the former.  To use it with the latter, set
 `flycheck-javascript-standard-executable' to `semistandard'.
 
-See URL `https://github.com/feross/standard' and URL
+See URL `https://github.com/standard/standard' and URL
 `https://github.com/Flet/semistandard'."
   :command ("standard" "--stdin")
   :standard-input t
@@ -9325,8 +9325,7 @@ the name of a rule to enable.
 
 By default all rules are enabled.
 
-See URL
-`https://github.com/mivok/markdownlint/blob/master/docs/configuration.md'."
+See URL `https://git.io/vhi2t'."
   :type '(repeat :tag "Enabled rules"
                  (string :tag "rule name"))
   :safe #'flycheck-string-list-p
@@ -9340,8 +9339,7 @@ the name of a rule tag.  Only rules with these tags are enabled.
 
 By default all rules are enabled.
 
-See URL
-`https://github.com/mivok/markdownlint/blob/master/docs/configuration.md'."
+See URL `https://git.io/vhi2t'."
   :type '(repeat :tag "Enabled tags"
                  (string :tag "tag name"))
   :safe #'flycheck-string-list-p
@@ -9354,7 +9352,7 @@ See URL
 (flycheck-define-checker markdown-mdl
   "Markdown checker using mdl.
 
-See URL `https://github.com/mivok/markdownlint'."
+See URL `https://github.com/markdownlint/markdownlint'."
   :command ("mdl"
             (config-file "--style" flycheck-markdown-mdl-style)
             (option "--tags=" flycheck-markdown-mdl-rules concat
@@ -9920,7 +9918,7 @@ See URL `https://github.com/sasstools/sass-lint'."
 (flycheck-define-checker scala
   "A Scala syntax checker using the Scala compiler.
 
-See URL `http://www.scala-lang.org/'."
+See URL `https://www.scala-lang.org/'."
   :command ("scalac" "-Ystop-after:parser" source)
   :error-patterns
   ((error line-start (file-name) ":" line ": error: " (message) line-end))
