@@ -2872,12 +2872,13 @@ buffer."
     (when flycheck-mode
       (if (string-match-p (rx "\n") (buffer-substring beg end))
           (flycheck-buffer-automatically 'new-line 'force-deferred)
-        (flycheck--clear-idle-trigger-timer)
-        (cl-pushnew 'idle-change flycheck--idle-trigger-conditions)
-        (setq flycheck--idle-trigger-timer
-              (run-at-time flycheck-idle-change-delay nil
-                           #'flycheck--handle-idle-trigger
-                           (current-buffer)))))))
+        (when (memq 'idle-change flycheck-check-syntax-automatically)
+          (flycheck--clear-idle-trigger-timer)
+          (cl-pushnew 'idle-change flycheck--idle-trigger-conditions)
+          (setq flycheck--idle-trigger-timer
+                (run-at-time flycheck-idle-change-delay nil
+                             #'flycheck--handle-idle-trigger
+                             (current-buffer))))))))
 
 (defvar flycheck--last-buffer (current-buffer)
   "The current buffer or the buffer that was previously current.
@@ -2904,7 +2905,8 @@ If a buffer switch actually happened, schedule a syntax check."
   (with-current-buffer (car (buffer-list))
     (unless (equal flycheck--last-buffer (current-buffer))
       (setq flycheck--last-buffer (current-buffer))
-      (when flycheck-mode
+      (when (and flycheck-mode
+                 (memq 'idle-buffer-switch flycheck-check-syntax-automatically))
         (flycheck--clear-idle-trigger-timer)
         (cl-pushnew 'idle-buffer-switch flycheck--idle-trigger-conditions)
         (setq flycheck-idle-buffer-switch-timer
