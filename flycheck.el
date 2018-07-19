@@ -2899,10 +2899,10 @@ If a buffer switch actually happened, schedule a syntax check."
   ;; between different buffers during the `with-temp-buffer' call
   ;; (note: two different normal buffers, not the current buffer and
   ;; the temp buffer!), and that would trigger spurious syntax checks.
-  ;; It seems that reading (car (buffer-list)) gets us the correct
-  ;; current buffer in all important real-life situations (although it
-  ;; doesn't necessarily catch uses of `set-buffer').
-  (with-current-buffer (car (buffer-list))
+  ;; It seems that reading (window-buffer) gets us the correct current
+  ;; buffer in all important real-life situations (although it doesn't
+  ;; necessarily catch uses of `set-buffer').
+  (with-current-buffer (window-buffer)
     (unless (equal flycheck--last-buffer (current-buffer))
       (setq flycheck--last-buffer (current-buffer))
       (when (and flycheck-mode
