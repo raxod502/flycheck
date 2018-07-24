@@ -562,7 +562,8 @@ If nil, never check syntax automatically.  In this case, use
   :group 'flycheck
   :type '(set (const :tag "After the buffer was saved" save)
               (const :tag "After the buffer was changed and idle" idle-change)
-              (const :tag "After switching to a new buffer and idle" idle-buffer-switch)
+              (const :tag "After switching to a new buffer and idle"
+                     idle-buffer-switch)
               (const :tag "After a new line was inserted" new-line)
               (const :tag "After `flycheck-mode' was enabled" mode-enabled))
   :package-version '(flycheck . "0.12")
