@@ -2809,6 +2809,16 @@ under at least one of them, according to
 (defvar-local flycheck--idle-trigger-timer nil
   "Timer used to trigger a syntax check after an idle delay.")
 
+(defvar-local flycheck--idle-trigger-conditions nil
+  "List of conditions under which an idle syntax check will be triggered.
+This will be some subset of the allowable values for
+`flycheck-check-syntax-automatically'.
+
+For example, if the user switches to a buffer and then makes an
+edit, this list will have the values `idle-change' and
+`idle-buffer-switch' in it, at least until the idle timer
+expires.")
+
 (defun flycheck-buffer-automatically (&optional condition force-deferred)
   "Automatically check syntax at CONDITION.
 
@@ -2834,16 +2844,6 @@ The syntax check is deferred if FORCE-DEFERRED is non-nil, or if
   (when flycheck--idle-trigger-timer
     (cancel-timer flycheck--idle-trigger-timer)
     (setq flycheck--idle-trigger-timer nil)))
-
-(defvar-local flycheck--idle-trigger-conditions nil
-  "List of conditions under which an idle syntax check will be triggered.
-This will be some subset of the allowable values for
-`flycheck-check-syntax-automatically'.
-
-For example, if the user switches to a buffer and then makes an
-edit, this list will have the values `idle-change' and
-`idle-buffer-switch' in it, at least until the idle timer
-expires.")
 
 (defun flycheck--handle-idle-trigger (buffer)
   "Run a syntax check in BUFFER if appropriate.
@@ -2910,7 +2910,7 @@ If a buffer switch actually happened, schedule a syntax check."
                  (memq 'idle-buffer-switch flycheck-check-syntax-automatically))
         (flycheck--clear-idle-trigger-timer)
         (cl-pushnew 'idle-buffer-switch flycheck--idle-trigger-conditions)
-        (setq flycheck-idle-buffer-switch-timer
+        (setq flycheck--idle-trigger-timer
               (run-at-time flycheck-idle-buffer-switch-delay nil
                            #'flycheck--handle-idle-trigger
                            (current-buffer)))))))
