@@ -2904,7 +2904,11 @@ If a buffer switch actually happened, schedule a syntax check."
   ;; buffer in all important real-life situations (although it doesn't
   ;; necessarily catch uses of `set-buffer').
   (with-current-buffer (window-buffer)
-    (unless (equal flycheck--last-buffer (current-buffer))
+    (unless (or (equal flycheck--last-buffer (current-buffer))
+                ;; Don't bother keeping track of changes to and from
+                ;; the minibuffer, as they will never require us to
+                ;; run a syntax check.
+                (minibufferp))
       (setq flycheck--last-buffer (current-buffer))
       (when (and flycheck-mode
                  (memq 'idle-buffer-switch flycheck-check-syntax-automatically))
