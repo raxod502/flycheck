@@ -579,15 +579,15 @@ If nil, never check syntax automatically.  In this case, use
   :group 'flycheck
   :type '(set (const :tag "After the buffer was saved" save)
               (const :tag "After the buffer was changed and idle" idle-change)
-              (const :tag "After switching to a new buffer and idle"
-                     idle-buffer-switch)
+              (const
+               :tag "After switching the current buffer" idle-buffer-switch)
               (const :tag "After a new line was inserted" new-line)
               (const :tag "After `flycheck-mode' was enabled" mode-enabled))
   :package-version '(flycheck . "0.12")
   :safe #'flycheck-symbol-list-p)
 
 (defcustom flycheck-idle-change-delay 0.5
-  "How long to wait after a change before checking syntax automatically.
+  "How many seconds to wait after a change before checking syntax.
 
 After the buffer was changed, Flycheck will wait as many seconds
 as the value of this variable before starting a syntax check.  If
@@ -602,7 +602,7 @@ This variable has no effect, if `idle-change' is not contained in
   :safe #'numberp)
 
 (defcustom flycheck-idle-buffer-switch-delay 0.5
-  "How long to wait after switching buffers before checking syntax.
+  "How many seconds to wait after switching buffers before checking syntax.
 
 After the user switches to a new buffer, Flycheck will wait as
 many seconds as the value of this variable before starting a
@@ -2790,20 +2790,31 @@ current syntax check."
 
 (defun flycheck--empty-variables ()
   "Empty variables used by Flycheck."
-  (kill-local-variable 'flycheck--idle-trigger-timer))
+  (kill-local-variable 'flycheck--idle-trigger-timer)
+  (kill-local-variable 'flycheck--idle-trigger-conditions))
 
-(defun flycheck-teardown ()
+(defun flycheck-teardown (&optional ignore-global)
   "Teardown Flycheck in the current buffer.
 
 Completely clear the whole Flycheck state.  Remove overlays, kill
-running checks, and empty all variables used by Flycheck."
+running checks, and empty all variables used by Flycheck.
+
+Unless optional argument IGNORE-GLOBAL is non-nil, check to see
+if no more Flycheck buffers remain (aside from the current
+buffer), and if so then clean up global hooks."
   (flycheck-safe-delete-temporaries)
   (flycheck-stop)
   (flycheck-clean-deferred-check)
   (flycheck-clear)
   (flycheck-cancel-error-display-error-at-point-timer)
   (flycheck--clear-idle-trigger-timer)
-  (flycheck--empty-variables))
+  (flycheck--empty-variables)
+  (unless (or ignore-global
+              (seq-some (lambda (buf)
+                          (and (not (equal buf (current-buffer)))
+                               (buffer-local-value 'flycheck-mode buf)))
+                        (buffer-list)))
+    (flycheck-global-teardown 'ignore-local)))
 
 
 ;;; Automatic syntax checking in a buffer
@@ -2812,13 +2823,13 @@ running checks, and empty all variables used by Flycheck."
 
 Read-only buffers may never be checked automatically.
 
-If CONDITIONS are given, determine whether syntax may checked
+If CONDITIONS are given, determine whether syntax may be checked
 under at least one of them, according to
 `flycheck-check-syntax-automatically'."
   (and (not (or buffer-read-only (flycheck-ephemeral-buffer-p)))
        (file-exists-p default-directory)
        (or (not conditions)
-           (cl-some
+           (seq-some
             (lambda (condition)
               (memq condition flycheck-check-syntax-automatically))
             conditions))))
@@ -3032,16 +3043,20 @@ Command `flycheck-mode' is only enabled if
   ;; 'flycheck
   )
 
-(defun flycheck-global-teardown ()
+(defun flycheck-global-teardown (&optional ignore-local)
   "Teardown Flycheck in all buffers.
 
 Completely clear the whole Flycheck state in all buffers, stop
 all running checks, remove all temporary files, and empty all
-variables of Flycheck."
-  (dolist (buffer (buffer-list))
-    (with-current-buffer buffer
-      (when flycheck-mode
-        (flycheck-teardown))))
+variables of Flycheck.
+
+Also remove global hooks.  (If optional argument IGNORE-LOCAL is
+non-nil, then only do this and skip per-buffer teardown.)"
+  (unless ignore-local
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (when flycheck-mode
+          (flycheck-teardown 'ignore-global)))))
   (remove-hook 'buffer-list-update-hook #'flycheck-handle-buffer-switch))
 
 ;; Clean up the entire state of Flycheck when Emacs is killed, to get rid of any
